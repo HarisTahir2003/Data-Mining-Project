@@ -1,4 +1,0 @@
-Dataset,Passages,Unique Nodes,Unique Edges,Unique Triples,Contriever Synonym Edges,ColBERTv2 Synonym Edges
-MuSiQue,11656,91729,21714,107448,145990,191636
-2WikiMultiHopQA,6119,42694,7867,50671,146020,82526
-HotpotQA,9221,82157,17523,98709,159112,171856
