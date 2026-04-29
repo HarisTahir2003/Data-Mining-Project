@@ -1,0 +1,134 @@
+\documentclass{article}
+
+% NeurIPS 2024 style
+% If you are using Overleaf, the neurips_2024.sty file is already included
+% in the standard NeurIPS 2024 template. Otherwise, download it from:
+% https://neurips.cc/Conferences/2024/PaperInformation/StyleFiles
+
+% ready for submission
+\usepackage[final]{neurips_2024}
+
+% to compile a preprint version, e.g., for submission to arXiv, use:
+%     \usepackage[preprint]{neurips_2024}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+%     \usepackage[final]{neurips_2024}
+
+% to avoid loading the natbib package, add option nonatbib:
+%    \usepackage[nonatbib]{neurips_2024}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{graphicx}       % include graphics
+\usepackage{amsmath}        % math
+\usepackage{amssymb}        % math symbols
+\usepackage{multirow}       % multi-row tables
+\usepackage{array}          % table tools
+
+\title{Reproducing and Evaluating HippoRAG: A Neurobiologically Inspired Retrieval Framework for Multi-Hop Question Answering}
+
+% The \author macro works with any number of authors. Use \And or \AND to
+% separate authors. Use \And between authors with the same affiliation, and
+% \AND to start a new line of authors.
+\author{%
+  Haris Rana \\
+  Roll No: 26100104 \\
+  Lahore University of Management Sciences (LUMS) \\
+  \texttt{26100104@lums.edu.pk} \\
+  \And
+  [Member 2 Name] \\
+  Roll No: [XXXXXXXX] \\
+  Lahore University of Management Sciences (LUMS) \\
+  \texttt{[email]@lums.edu.pk} \\
+  \And
+  [Member 3 Name] \\
+  Roll No: [XXXXXXXX] \\
+  Lahore University of Management Sciences (LUMS) \\
+  \texttt{[email]@lums.edu.pk} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This intermediate progress report documents our ongoing reproduction and evaluation study of \textbf{HippoRAG} (Jim\'enez Guti\'errez et al., NeurIPS 2024), a neurobiologically inspired retrieval-augmented generation framework that mimics the human hippocampal indexing theory of long-term memory. HippoRAG synergistically orchestrates three components, an instruction-tuned large language model (LLM) acting as an artificial neocortex, dense retrieval encoders acting as the parahippocampal regions, and a knowledge graph paired with the Personalized PageRank (PPR) algorithm acting as the hippocampal index, in order to perform single-step multi-hop retrieval over a corpus. In the offline indexing phase, the LLM is used to perform Open Information Extraction (OpenIE) on every passage in the corpus, producing a schemaless knowledge graph (KG) of noun-phrase nodes connected by relation edges, with additional synonymy edges added by a dense retriever. At query time, the LLM extracts named entities from the question, links them to KG nodes via cosine similarity, and runs Personalized PageRank seeded at these query nodes to propagate probability mass through the graph. Passages are then ranked by aggregating the resulting node probabilities through a node-to-passage incidence matrix. The original work reports retrieval gains of up to 20\% on multi-hop benchmarks (MuSiQue and 2WikiMultiHopQA) over strong baselines such as ColBERTv2, GTR, and Contriever, while remaining 6--13$\times$ faster and 10--30$\times$ cheaper than iterative retrievers like IRCoT during online retrieval. Our project aims to reproduce these results, perform exploratory data analysis on the released datasets and knowledge graphs, and evaluate the method's robustness under different design choices (e.g., open-weight LLMs for OpenIE, alternative graph search strategies). This report presents the first deliverable: a summary of the paper, the reproduction plan, and our preliminary exploratory analysis.
+\end{abstract}
+
+\section{Project Title}
+\textbf{Reproducing and Evaluating HippoRAG: A Neurobiologically Inspired Retrieval Framework for Multi-Hop Question Answering.}
+
+This project undertakes a systematic reproduction and empirical evaluation of the HippoRAG framework introduced by Jim\'enez Guti\'errez et al.\ at NeurIPS 2024. We focus on (i) replicating the headline retrieval and QA results on the MuSiQue, 2WikiMultiHopQA, and HotpotQA benchmarks; (ii) characterizing the structure of the LLM-induced knowledge graph through exploratory data analysis; and (iii) probing the framework's sensitivity to its core design choices, namely the OpenIE backbone, the synonymy threshold, and the PPR damping factor.
+
+\section{Group Members}
+\begin{itemize}
+    \item \textbf{Haris Rana} --- Roll No.\ 26100104, Lahore University of Management Sciences (LUMS).
+    \item \textbf{[Member 2 Name]} --- Roll No.\ [XXXXXXXX], Lahore University of Management Sciences (LUMS).
+    \item \textbf{[Member 3 Name]} --- Roll No.\ [XXXXXXXX], Lahore University of Management Sciences (LUMS).
+\end{itemize}
+
+\section{Abstract and Summary of the Paper}
+
+\subsection{Motivation}
+Modern large language models, even when augmented with retrieval (RAG), still struggle to integrate information across passage boundaries because each passage is encoded in isolation. Many real-world tasks, such as scientific literature review or multi-hop question answering, require associating evidence scattered across the corpus. The mammalian brain solves this problem effortlessly: the hippocampal memory indexing theory of Teyler and Discenna (1986) posits that the \emph{neocortex} stores rich perceptual representations, while the C-shaped \emph{hippocampus} maintains a sparse \emph{index} of pointers and associations between those representations, supported by the \emph{parahippocampal regions} (PHR) that route signals between the two. HippoRAG operationalizes this three-component picture as a long-term memory system for LLMs, with each component implemented by a familiar machine-learning primitive.
+
+\subsection{Architecture Overview}
+HippoRAG consists of three modules whose roles mirror the neocortex, the PHR, and the hippocampus:
+\begin{itemize}
+    \item \textbf{Artificial Neocortex (LLM).} An instruction-tuned LLM (GPT-3.5-turbo in the main experiments, with Llama-3.1-8B/70B as open-weight alternatives) is used both to extract knowledge from passages during indexing and to extract salient named entities from queries during retrieval.
+    \item \textbf{Parahippocampal Regions (Dense Retrieval Encoders).} Off-the-shelf retrieval encoders (Contriever or ColBERTv2) are used to (i) link query named entities to knowledge graph nodes via cosine similarity and (ii) introduce additional synonymy edges between near-duplicate noun phrases in the graph.
+    \item \textbf{Hippocampal Index (Knowledge Graph + Personalized PageRank).} A schemaless open knowledge graph built from the entire corpus serves as the hippocampal index. The Personalized PageRank algorithm performs context-dependent pattern completion over this graph, propagating probability mass from a small set of query-derived seed nodes to relevant neighborhoods.
+\end{itemize}
+
+\subsection{Offline Indexing: Building the Hippocampal Index via OpenIE}
+The offline indexing phase converts a passage corpus $P$ into a graph $G = (N, E \cup E')$ as follows:
+\begin{enumerate}
+    \item For each passage, the LLM is prompted (1-shot) to perform Named Entity Recognition (NER), producing a list of named entities.
+    \item In a second 1-shot prompt, the LLM is given the passage \emph{and} its NER list, and is asked to perform Open Information Extraction (OpenIE), emitting a list of \texttt{(subject, relation, object)} triples. The two-stage NER-then-OpenIE design is reported to balance generality with a useful bias toward named entities, and to roughly double the triple yield of an end-to-end OpenIE model such as REBEL.
+    \item The set of unique noun phrases across all triples becomes the node set $N$; the relation strings become the edge set $E$. Both nodes and edges are kept as raw text (i.e., the KG is schemaless).
+    \item The dense retriever encodes every node in $N$. Whenever the cosine similarity between two node embeddings exceeds a threshold $\tau = 0.8$, a \emph{synonymy edge} is added to $E'$. These synonymy edges play the role of the dense, recurrent CA3 connectivity inside the biological hippocampus, and enable robust pattern completion across surface-form variation (e.g., \emph{Stanford Univ.}\ vs.\ \emph{Stanford University}).
+    \item A sparse incidence matrix $\mathbf{P} \in \mathbb{R}^{|N| \times |P|}$ is stored, where $\mathbf{P}_{ij}$ records how many times noun phrase $i$ was extracted from passage $j$.
+\end{enumerate}
+A useful byproduct of the indexing phase is the \emph{node specificity} score $s_i = |P_i|^{-1}$, i.e., the inverse of the number of passages from which node $i$ was extracted. This is a neurobiologically plausible analogue of inverse document frequency (IDF) that requires only local information at each node, in contrast to a global aggregator neuron.
+
+\subsection{Online Retrieval: Single-Step Multi-Hop via Personalized PageRank}
+Given a query $q$, retrieval proceeds in four steps:
+\begin{enumerate}
+    \item \textbf{Query NER.} The LLM extracts a set of query named entities $C_q = \{c_1, \dots, c_n\}$ via 1-shot prompting (e.g., for the query \emph{"Which Stanford professor works on the neuroscience of Alzheimer's?"}, $C_q = \{\textit{Stanford}, \textit{Alzheimer's}\}$).
+    \item \textbf{Query Node Linking.} Each $c_i$ is encoded by the retriever and matched to its nearest node in the KG by cosine similarity, producing the set of \emph{query nodes} $R_q$.
+    \item \textbf{Personalized PageRank.} A personalization vector $\vec{n}$ is constructed by placing equal probability mass on the query nodes (scaled by their node specificity $s_i$) and zero elsewhere. Personalized PageRank (Haveliwala, 2002) is then run on the KG with damping factor $0.5$, yielding an updated node distribution $\vec{n'}$. Crucially, restarting random walks always at the query nodes biases the stationary distribution toward the joint multi-hop neighborhood of those nodes, effectively performing multi-hop reasoning in a \emph{single} retrieval step.
+    \item \textbf{Passage Ranking.} The final passage scores are obtained as $\vec{p} = \mathbf{P}^\top \vec{n'}$, and the top-$k$ passages are returned.
+\end{enumerate}
+
+\subsection{Headline Empirical Results}
+On 1{,}000-question development splits of three multi-hop QA benchmarks, HippoRAG (with ColBERTv2 as the retriever) achieves the following Recall@2 / Recall@5 scores against the strongest single-step baselines:
+\begin{itemize}
+    \item \textbf{MuSiQue}: 40.9 / 51.9 (vs.\ 37.9 / 49.2 for ColBERTv2).
+    \item \textbf{2WikiMultiHopQA}: 70.7 / 89.1 (vs.\ 59.2 / 68.2 for ColBERTv2), an improvement of approximately 11--20 points.
+    \item \textbf{HotpotQA}: 60.5 / 77.7, comparable to ColBERTv2 (64.7 / 79.3); the smaller gap is attributed to HotpotQA's weaker multi-hop signal.
+\end{itemize}
+When combined with the iterative retriever IRCoT, HippoRAG yields further complementary gains (up to +20 R@5 on 2WikiMultiHopQA), while \emph{single-step} HippoRAG matches or beats IRCoT alone at 6--13$\times$ lower latency and 10--30$\times$ lower API cost. Ablations confirm that the largest performance gains come from PPR itself (replacing PPR with seed nodes plus 1-hop neighbors degrades performance), with smaller but consistent contributions from node specificity and synonymy edges.
+
+\subsection{Limitations Identified by the Authors}
+The authors note three limitations that we will keep in mind during reproduction: (i) all components are used off-the-shelf with no fine-tuning, leaving headroom on NER and OpenIE quality (which together account for $\sim$76\% of errors in their analysis); (ii) the entity-centric design discards contextual cues, occasionally hurting performance on questions whose decisive signal is non-entity context (the \emph{concept-context tradeoff}); and (iii) OpenIE quality degrades on longer passages, suggesting brittleness as document length grows.
+
+\subsection{Plan for Subsequent Sections (To Be Completed)}
+This intermediate report will be extended with:
+\begin{itemize}
+    \item Exploratory Data Analysis (EDA) on the MuSiQue, 2WikiMultiHopQA, and HotpotQA splits, characterizing passage-length distributions, question-type distributions, and the structure of the released knowledge graphs (node-degree distributions, connected components, synonymy-edge density).
+    \item A reproduction protocol covering environment setup, model checkpoints, and the metrics (R@2, R@5, AR@2, AR@5, EM, F1) used to validate our re-run against the published numbers.
+    \item Preliminary results on a sub-sample of MuSiQue, including any deviations from the published numbers and our hypotheses for those deviations.
+\end{itemize}
+
+% \section*{References}
+% \bibliographystyle{plainnat}
+% \bibliography{references}
+
+\end{document}
