@@ -26,20 +26,20 @@
 \title{Reproducing and Evaluating HippoRAG: A Neurobiologically Inspired Retrieval Framework for Multi-Hop Question Answering}
 
 \author{%
+  Abdul Samad Nasir \\
+  Roll No.\ 24280018 \\
+  Lahore University of Management Sciences \\
+  \texttt{24280018@lums.edu.pk} \\
+  \And
   Haris Tahir Rana \\
   Roll No.\ 26100104 \\
   Lahore University of Management Sciences \\
   \texttt{26100104@lums.edu.pk} \\
   \And
-  [Member 2 Name] \\
-  Roll No.\ [XXXXXXXX] \\
+  Haris Tahir Rathore \\
+  Roll No.\ 26100064 \\
   Lahore University of Management Sciences \\
-  \texttt{[email]@lums.edu.pk} \\
-  \And
-  [Member 3 Name] \\
-  Roll No.\ [XXXXXXXX] \\
-  Lahore University of Management Sciences \\
-  \texttt{[email]@lums.edu.pk} \\
+  \texttt{26100064@lums.edu.pk} \\
 }
 
 \begin{document}
@@ -113,7 +113,6 @@ We performed a two-pronged EDA on the three benchmarks the paper evaluates on (M
 
 \textbf{Headline empirical result.} Figure~\ref{fig:retrieval_heatmap} renders the paper's main retrieval table as a single heatmap. The HippoRAG rows visibly dominate on the 2Wiki columns (R@5~89.1--89.5 vs.\ 68.2 for the strongest classical baseline), match the field on MuSiQue, and trail by a small margin on HotpotQA. Wrapping HippoRAG with the iterative IRCoT retriever yields an additional +3 to +5-point lift on top, and single-step HippoRAG matches IRCoT alone while running 6--13$\times$ faster and 10--30$\times$ cheaper at query time --- a cost profile we will respect when budgeting our reproduction.
 
-\textbf{Implications for the upcoming reproduction.} The structural findings translate into three concrete decisions: (1)~the +21-point R@5 gain on 2Wiki is the easiest validation target --- largest absolute gap, smallest corpus, fixed pool size --- so we will reproduce it first, then MuSiQue, then HotpotQA; (2)~Llama-3.1-8B-Instruct is our default OpenIE backbone (zero API cost, only $\approx$5 F1 below GPT-3.5 on intrinsic CaRB), with GPT-3.5-Turbo-0125 reserved for 2Wiki spot-checks; (3)~aggressive chunking is risky given the long right-tails on MuSiQue and 2Wiki, so we will keep the paper's default segmentation rather than introduce a new variable.
 
 \section*{Acknowledgements}
 We thank the authors of HippoRAG for releasing both code and pre-processed datasets on the legacy branch of their GitHub repository, which made the EDA in this report exact rather than approximate.
