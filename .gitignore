@@ -1,2 +1,3 @@
 .claude/
 figures/
+__pycache__*
