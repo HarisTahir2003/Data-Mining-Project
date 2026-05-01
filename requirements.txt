@@ -1,0 +1,14 @@
+# LLM API
+google-genai
+# Graph algorithms
+igraph>=0.11.0
+# Deep Learning and Embeddings
+torch>=2.0.0
+transformers>=4.35.0
+accelerate>=0.26.0
+bitsandbytes>=0.41.0
+sentence-transformers>=2.2.0
+# Utilities
+numpy>=1.24.0
+pandas>=2.0.0
+tqdm>=4.66.0
