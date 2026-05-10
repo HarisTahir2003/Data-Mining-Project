@@ -24,22 +24,29 @@ class DatasetLoader:
         Loads HotpotQA style queries and corpus.
         Returns a tuple of (queries, corpus_dict)
         """
-        with open(corpus_path, 'r') as f:
-            raw_corpus = json.load(f)
-            
-        corpus = {}
-        for title, sentences in raw_corpus.items():
-            if isinstance(sentences, list):
-                text = " ".join(sentences)
-            else:
-                text = str(sentences)
-            corpus[title] = Passage(title=title, text=text, id=title)
-            
         with open(queries_path, 'r') as f:
             raw_queries = json.load(f)
             
         if limit:
             raw_queries = raw_queries[:limit]
+            
+        required_titles = set()
+        for q in raw_queries:
+            if 'context' in q:
+                for ctx in q['context']:
+                    required_titles.add(ctx[0])
+                    
+        with open(corpus_path, 'r') as f:
+            raw_corpus = json.load(f)
+            
+        corpus = {}
+        for title, sentences in raw_corpus.items():
+            if title in required_titles:
+                if isinstance(sentences, list):
+                    text = " ".join(sentences)
+                else:
+                    text = str(sentences)
+                corpus[title] = Passage(title=title, text=text, id=title)
             
         queries = []
         for q in raw_queries:
@@ -101,20 +108,27 @@ class DatasetLoader:
         Loads 2WikiMultiHopQA style queries and corpus.
         Returns a tuple of (queries, corpus_dict)
         """
+        with open(queries_path, 'r') as f:
+            raw_queries = json.load(f)
+            
+        if limit:
+            raw_queries = raw_queries[:limit]
+            
+        required_titles = set()
+        for q in raw_queries:
+            if 'context' in q:
+                for ctx in q['context']:
+                    required_titles.add(ctx[0])
+
         with open(corpus_path, 'r') as f:
             raw_corpus = json.load(f)
             
         corpus = {}
         for item in raw_corpus:
             title = item['title']
-            text = item['text']
-            corpus[title] = Passage(title=title, text=text, id=title)
-            
-        with open(queries_path, 'r') as f:
-            raw_queries = json.load(f)
-            
-        if limit:
-            raw_queries = raw_queries[:limit]
+            if title in required_titles:
+                text = item['text']
+                corpus[title] = Passage(title=title, text=text, id=title)
             
         queries = []
         for q in raw_queries:

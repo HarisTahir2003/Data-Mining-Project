@@ -7,7 +7,11 @@ class OpenIEExtractor:
     def __init__(self, llm: BaseLLM):
         self.llm = llm
         self.prompt_template = """Your task is to construct an RDF (Resource Description Framework) graph from the given passages and named entity lists.
-Respond with a JSON dict containing 'named_entities' and 'triples'.
+Respond with a JSON dict containing 'named_entities' and 'triples', with each triple representing a relationship in the RDF graph.
+
+Pay attention to the following requirements:
+- Each triple should contain at least one, but preferably two, of the named entities in the list for each passage.
+- Clearly resolve pronouns to their specific names to maintain clarity.
 
 Convert the paragraph into a JSON dict, it has a named entity list and a triple list.
 One-Shot Demonstration:
